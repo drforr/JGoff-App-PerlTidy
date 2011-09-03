@@ -1,8 +1,11 @@
 package JGoff::App::Perltidy;
 
-use 5.006;
-use strict;
-use warnings;
+use Carp qw( croak );
+use Moose;
+
+has settings => ( is => 'rw', isa => 'HashRef', default => sub {
+  binop => { pre => ' ', post => ' ' }
+} );
 
 =head1 NAME
 
@@ -28,25 +31,19 @@ Perhaps a little code snippet.
     my $foo = JGoff::App::Perltidy->new();
     ...
 
-=head1 EXPORT
+=head1 METHODS
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+=head2 reformat( text => $code )
 
 =cut
 
-sub function1 {
-}
+sub reformat {
+  my $self = shift;
+  my %args = @_;
+  croak "*** No text specified!" unless
+    exists $args{text};
 
-=head2 function2
-
-=cut
-
-sub function2 {
+  return '$x = 0';
 }
 
 =head1 AUTHOR

@@ -6,4 +6,23 @@ BEGIN {
     use_ok( 'JGoff::App::Perltidy' ) || print "Bail out!\n";
 }
 
-diag( "Testing JGoff::App::Perltidy $JGoff::App::Perltidy::VERSION, Perl $], $^X" );
+my $tidy = JGoff::App::Perltidy->new;
+
+#
+# Default settings - Deliberately somewhat complex
+#
+# $x = 0;
+# sub foo
+#   {
+#     my $self = shift;
+#     $self->bar( 1 );
+#   }
+#
+
+{
+  is( $tidy->reformat( text => << 'EOF' ), << 'EOF' );
+$x=0
+EOF
+$x = 0
+EOF
+}
