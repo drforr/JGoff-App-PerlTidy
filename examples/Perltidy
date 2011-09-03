@@ -1,0 +1,31 @@
+#!/usr/local/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Carp 'croak';
+
+# {{{ Usage( message => $message )
+
+sub Usage {
+  my %args = @_;
+  
+  my $message = $args{message};
+  print STDERR $message if $message;
+  print STDERR <<'EOF';
+usage: $0 [options]
+	-h, --help	This message
+EOF
+  exit 1 if $message;
+  exit 0;
+}
+
+# }}}
+
+my %opts;
+my $res = GetOptions(
+  \%opts,
+  'help|h',
+);
+
+Usage if $opts{help};

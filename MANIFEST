@@ -1,0 +1,12 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+examples/Perltidy
+ignore.txt
+lib/JGoff/App/Perltidy.pm
+t/00-load.t
+t/boilerplate.t
+t/manifest.t
+t/pod-coverage.t
+t/pod.t
