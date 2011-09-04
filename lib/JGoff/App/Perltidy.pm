@@ -15,8 +15,12 @@ use Moose;
 #     do_stuff ( );
 #   }
 #
+has DEBUG => ( is => 'rw', isa => 'Int', default => 0 );
 has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
   operator => {
+    '+' => { pre => ' ', post => ' ', unary => '' },
+    '-' => { pre => ' ', post => ' ', unary => '' },
+
     '++' => '', '--' => '',
     '!' => '', '~' => '',
 
@@ -72,7 +76,37 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-# {{{ _canon_whitespace_before( node => $node [, pre => ' ' ] )
+# {{{ _remove_whitespace_before( node => $node )
+
+sub _remove_whitespace_before {
+  my $self = shift;
+  my %args = @_;
+  croak "*** Internal error - No node passed in" unless
+    $args{node};
+
+  while ( $args{node}->previous_sibling->isa('PPI::Token::Whitespace') ) {
+    $args{node}->previous_sibling->remove;
+  }
+}
+
+# }}}
+
+# {{{ _remove_whitespace_after( node => $node )
+
+sub _remove_whitespace_after {
+  my $self = shift;
+  my %args = @_;
+  croak "*** Internal error - No node passed in" unless
+    $args{node};
+
+  while ( $args{node}->next_sibling->isa('PPI::Token::Whitespace') ) {
+    $args{node}->next_sibling->remove;
+  }
+}
+
+# }}}
+
+# {{{ _canon_whitespace_before( node => $node [, whitespace => ' ' ] )
 
 sub _canon_whitespace_before {
   my $self = shift;
@@ -80,22 +114,22 @@ sub _canon_whitespace_before {
   croak "*** Internal error - No node passed in" unless
     $args{node};
 
-  delete $args{pre} if $args{pre} and $args{pre} eq q{};
+  delete $args{whitespace} if $args{whitespace} and $args{whitespace} eq q{};
 
   return unless $args{node}->previous_sibling;
 
-  while ( $args{node}->previous_sibling->isa('PPI::Token::Whitespace') ) {
-    $args{node}->previous_sibling->remove;
+  $self->_remove_whitespace_before( %args );
+  if ( $args{whitespace} ) {
+    my $whitespace = PPI::Token::Whitespace->new;
+    $whitespace->set_content( $args{whitespace} );
+    $args{node}->previous_sibling->insert_after( $whitespace ) or
+      croak "*** Could not insert whitespace!";
   }
-  my $whitespace = PPI::Token::Whitespace->new;
-  $whitespace->set_content( $args{pre} );
-  $args{node}->previous_sibling->insert_after( $whitespace ) or
-    croak "*** Could not insert whitespace!";
 }
 
 # }}}
 
-# {{{ _canon_whitespace_after( node => $node [, post => ' ' ] )
+# {{{ _canon_whitespace_after( node => $node [, whitespace => ' ' ] )
 
 sub _canon_whitespace_after {
   my $self = shift;
@@ -103,74 +137,72 @@ sub _canon_whitespace_after {
   croak "*** Internal error - No node passed in" unless
     $args{node};
 
-  delete $args{post} if $args{post} and $args{post} eq q{};
+  delete $args{whitespace} if $args{whitespace} and $args{whitespace} eq q{};
 
   return unless $args{node}->next_sibling;
 
-  while ( $args{node}->next_sibling->isa('PPI::Token::Whitespace') ) {
-    $args{node}->next_sibling->remove;
+  $self->_remove_whitespace_after( %args );
+  if ( $args{whitespace} ) {
+    my $whitespace = PPI::Token::Whitespace->new;
+    $whitespace->set_content( $args{whitespace} );
+    $args{node}->next_sibling->insert_before( $whitespace ) or
+      croak "*** Could not insert whitespace!";
   }
-  my $whitespace = PPI::Token::Whitespace->new;
-  $whitespace->set_content( $args{post} );
-  $args{node}->next_sibling->insert_before( $whitespace ) or
-    croak "*** Could not insert whitespace!";
 }
 
 # }}}
 
-# {{{ _binop( node => $node )
+# {{{ _binary_operator( node => $node )
 
-sub _binop {
+sub _binary_operator {
   my $self = shift;
   my %args = @_;
   croak "*** No node specified!" unless
     exists $args{'node'};
 
-  my $content = $args{node}->content;
-  my $setting = $self->settings->{'operator'}->{$content};
+  my $operator = $args{node}->content;
+  my $setting = $self->settings->{'operator'}->{$operator};
 
-  croak "*** No '$content' operator settings specified!" unless
+  croak "*** No '$operator' operator settings specified!" unless
     $setting;
   $self->_canon_whitespace_before(
-    node => $args{node}, pre => $setting->{'pre'} );
+    node => $args{node},
+    whitespace => $setting->{'pre'}
+  );
   $self->_canon_whitespace_after(
-    node => $args{node}, post => $setting->{'post'} );
+    node => $args{node},
+    whitespace => $setting->{'post'}
+  );
+}
+
+# }}}
+
+# {{{ _unary_operator( node => $node )
+
+sub _unary_operator {
+  my $self = shift;
+  my %args = @_;
+  croak "*** No node specified!" unless
+    exists $args{'node'};
+
+  my $operator = $args{node}->content;
+  my $setting = $self->settings->{'operator'}->{$operator};
+
+  croak "*** No '$operator' operator settings specified!" unless
+    $setting;
+  $self->_canon_whitespace_before(
+    node => $args{node}, pre => $setting );
+  $self->_canon_whitespace_after(
+    node => $args{node}, post => $setting );
 }
 
 # }}}
 
 my %action = (
-  map { $_ => 'binop' } (
-    '>', '>=', 'gt', 'ge',
-    '<', '<=', 'lt', 'le',
-    '==', '!=', 'eq', 'ne',
-    '<=>', 'cmp',
-    '~~',
-    '=>',
-    '->',
-    '=',
-    ',',
-    '&', '&&', 'and',
-    '|', '||', 'or',
-    '^',
-    '//', 'dor',
-
-    '**=', '+=', '*=', '&=', '<<=', '&&=', '-=', '/=',
-    '|=', '>>=', '||=', '.=', '%=', '^=', '//=', 'x=',
-
-    '*', '**', '/', '%',
-    '<<', '>>',
-    '.', '..',
-    'x',
-    '=~', '!~',
-    '...',
-  ),
-  map { $_ => 'unop' } (
-    '++', '--',
-    '!', '~',
-    'not',
-    '<>',
-  )
+  '++' => 'unary_operator',  '--' => 'unary_operator',
+  '!' => 'unary_operator', '~' => 'unary_operator',
+  'not' => 'unary_operator',
+  '<>' => 'unary_operator',
 );
 
 # {{{ _operator( node => $node )
@@ -182,20 +214,33 @@ sub _operator {
     exists $args{node};
 
 # # This is the list of valid operators
-# +    -
-# ,
 # ?    :
 # =>   ->
 
-  my $content = $args{node}->content;
-
-  croak "*** Unknown operator type '$action{$content}'!" unless
-    exists $action{$content};
-  if ( $action{$content} eq 'binop' ) {
-    $self->_binop( node => $args{node} );
+  my $operator = $args{node}->content;
+  if ( $operator eq '+' or
+       $operator eq '-' ) {
+my $d = PPI::Dumper->new( $self->ppi );
+die $d->string if $self->DEBUG;
+    if ( $args{node}->previous_sibling ) {
+      $self->_binary_operator( node => $args{node} );
+    }
+    else {
+my $ppi = PPI::Document->new( $self->ppi );
+my $d = PPI::Dumper->new( $ppi );
+warn $d->string if $self->DEBUG;
+      $self->_canon_whitespace_after(
+        node => $args{node},
+        whitespace => $self->settings->{$operator}->{unary}
+      );
+    }
   }
-  elsif ( $action{$content} eq 'unop' ) {
-    $self->_unop( node => $args{node} );
+  elsif ( exists $action{$operator} and
+          $action{$operator} eq 'unary_operator' ) {
+    $self->_unary_operator( node => $args{node} );
+  }
+  else {
+    $self->_binary_operator( node => $args{node} );
   }
 }
 
