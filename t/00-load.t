@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 26;
+use Test::More tests => 34;
 use PPI;
 use PPI::Dumper;
 
@@ -13,8 +13,7 @@ my $tidy = JGoff::App::Perltidy->new;
 #
 # Default settings - Deliberately somewhat complex
 #
-# $x = 0; # Comments as well
-# sub foo # complex braces as well
+# $x = 0; # Comments as well # sub foo # complex braces as well
 #   {
 #     my $self = shift;
 #     $self->bar( 1 );
@@ -26,6 +25,7 @@ my $tidy = JGoff::App::Perltidy->new;
 #
 
 my @test = (
+  [ '' => '' ],
   [ '<' => '<' ],
   [ '0<' => '0 <' ],
   [ '<0' => '< 0' ],
@@ -49,16 +49,53 @@ my @test = (
   [ '0*1/1' => '0 * 1 / 1' ],
   [ '+1' => '+1' ],
   [ '+  1' => '+1' ],
+  [ "\t+  1 " => '+1' ],
+  [ '-1' => '-1' ],
+  [ '-  1' => '-1' ],
+  [ "\t-  1 " => '-1' ],
   [ '0++' => '0++' ],
   [ '++0' => '++0' ],
   [ '0++' => '0++' ],
   [ '0 ++' => '0++' ],
+  [ "0 ++;1\t++" => "0++;\n1++" ],
+  [ "0 ++;\n1\t++" => "0++;\n1++" ],
+  [ "0 ++;\n1\t++  ;\n  2+2" => "0++;\n1++;\n2 + 2" ],
 );
 
+#    my $ppi = PPI::Document->new( \"0 ++;\n1 ++" );
+#    my $d = PPI::Dumper->new( $ppi );
+#    die "\n".$d->string;
 for my $test ( @test ) {
-  is( $tidy->reformat( text => $test->[0] ), $test->[1] ) or do {
+  my $res = $tidy->reformat( text => $test->[0] );
+  is( $res, $test->[1] ) or do {
     my $ppi = PPI::Document->new( \$test->[0] );
     my $d = PPI::Dumper->new( $ppi );
-    diag( "Dump( '$test->[0]' ): " . $d->string );
+    my $test_0 = $d->string;
+    $ppi = PPI::Document->new( \$test->[1] );
+    $d = PPI::Dumper->new( $ppi );
+    my $test_1 = $d->string;
+    $ppi = PPI::Document->new( \$res );
+    $d = PPI::Dumper->new( $ppi );
+    my $res_dump = $d->string;
+
+diag <<EOF;
+C<$test->[0]>
+
+should be:
+
+C<$test->[1]>
+
+but is:
+
+C<$res>
+EOF
+
+    diag <<EOF;
+$test_0
+
+$test_1
+
+$res_dump
+EOF
   };
 }
