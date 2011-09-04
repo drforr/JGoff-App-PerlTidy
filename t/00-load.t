@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 13;
+use Test::More tests => 20;
 use PPI;
 use PPI::Dumper;
 
@@ -13,17 +13,23 @@ my $tidy = JGoff::App::Perltidy->new;
 #
 # Default settings - Deliberately somewhat complex
 #
-# $x = 0;
-# sub foo
+# $x = 0; # Comments as well
+# sub foo # complex braces as well
 #   {
 #     my $self = shift;
 #     $self->bar( 1 );
+#     if ( $conditional ) # ' ' around () here, but
+#       {
+#       do_stuff(); # nothing around ()
+#       }
 #   }
 #
 
 my @test = (
   [ '<' => '<' ],
   [ '0<' => '0 <' ],
+  [ '<0' => '< 0' ],
+  [ '0<1' => '0 < 1' ],
   [ '0 <' => '0 <' ],
   [ '0  <' => '0 <' ],
   [ '0  <1' => '0 < 1' ],
@@ -34,6 +40,13 @@ my @test = (
   [ "0\n < \n1" => '0 < 1' ],
   [ "0 \n < \n1" => '0 < 1' ],
   [ "0\t\n\t<\t\n1" => '0 < 1' ],
+
+  [ '0,1' => '0, 1' ],
+  [ '0=>1' => '0 => 1' ],
+  [ '$foo->bar' => '$foo->bar' ],
+  [ '$foo -> bar' => '$foo->bar' ],
+
+  [ '0*1/1' => '0 * 1 / 1' ],
 );
 
 for my $test ( @test ) {
@@ -43,16 +56,3 @@ for my $test ( @test ) {
     diag( "Dump( '$test->[0]' ): " . $d->string );
   };
 }
-
-my @operator = (
-  'lt',
-  '<=', 'le',
-  '>', 'gt',
-  '>=', 'ge',
-  '==', 'eq',
-  '!=', 'ne',
-  '&', '&&', 'and',
-  '|', '||', 'or',
-  '+=', '-=', '*=', '/=',
-  '*', '/', '%',
-);

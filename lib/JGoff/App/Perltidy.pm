@@ -11,11 +11,19 @@ use Moose;
 # sub foo
 #   {
 #     $bar++;
-#     do_stuff();
+#     $bar += 32;
+#     do_stuff ( );
 #   }
 #
 has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
   operator => {
+    '++' => '', '--' => '',
+    '!' => '', '~' => '',
+
+    ',' => { pre => '', post => ' ' },
+    '=>' => { pre => ' ', post => ' ' },
+    '->' => { pre => '', post => '' },
+
     '<' => { pre => ' ', post => ' ' }, 'lt' => { pre => ' ', post => ' ' },
     '<=' => { pre => ' ', post => ' ' }, 'le' => { pre => ' ', post => ' ' },
     '>' => { pre => ' ', post => ' ' }, 'gt' => { pre => ' ', post => ' ' },
@@ -27,26 +35,26 @@ has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
     'and' => { pre => ' ', post => ' ' },
     '|' => { pre => ' ', post => ' ' },
     '||' => { pre => ' ', post => ' ' },
+    '//' => { pre => ' ', post => ' ' },
     'or' => { pre => ' ', post => ' ' },
     'dor' => { pre => ' ', post => ' ' },
     '^' => { pre => ' ', post => ' ' },
-    '+=' => { pre => ' ', post => ' ' },
-    '-=' => { pre => ' ', post => ' ' },
-    '*=' => { pre => ' ', post => ' ' },
-    '/=' => { pre => ' ', post => ' ' },
+    '+=' => { pre => ' ', post => ' ' }, '-=' => { pre => ' ', post => ' ' },
+    '*=' => { pre => ' ', post => ' ' }, '/=' => { pre => ' ', post => ' ' },
+    '.=' => { pre => ' ', post => ' ' }, '//=' => { pre => ' ', post => ' ' },
     '*' => { pre => ' ', post => ' ' },
     '/' => { pre => ' ', post => ' ' },
     '%' => { pre => ' ', post => ' ' },
+    '<<' => { pre => ' ', post => ' ' },
+    '>>' => { pre => ' ', post => ' ' },
   },
   indent => '    ',
   #
   # The last statement of a function doesn't get a newline.
   #
   subroutine => {
-    pre_open => "\n  ",
-    post_open => "\n",
-    pre_close => "\n  ",
-    post_close => "\n  "
+    open => { pre => "\n  ", post => "\n" },
+    close => { pre => "\n  ", post => "\n  " }
   }
 } } );
 
@@ -131,6 +139,40 @@ sub _binop {
 
 # }}}
 
+my %action = (
+  map { $_ => 'binop' } (
+    '>', '>=', 'gt', 'ge',
+    '<', '<=', 'lt', 'le',
+    '==', '!=', 'eq', 'ne',
+    '<=>', 'cmp',
+    '~~',
+    '=>',
+    '->',
+    '=',
+    ',',
+    '&', '&&', 'and',
+    '|', '||', 'or',
+    '^',
+    '//', 'dor',
+
+    '**=', '+=', '*=', '&=', '<<=', '&&=', '-=', '/=',
+    '|=', '>>=', '||=', '.=', '%=', '^=', '//=', 'x=',
+
+    '*', '**', '/', '%',
+    '<<', '>>',
+    '.', '..',
+    'x',
+    '=~', '!~',
+    '...',
+  ),
+  map { $_ => 'unop' } (
+    '++', '--',
+    '!', '~',
+    'not',
+    '<>',
+  )
+);
+
 # {{{ _operator( node => $node )
 
 sub _operator {
@@ -140,37 +182,10 @@ sub _operator {
     exists $args{node};
 
 # # This is the list of valid operators
-# ++   --   **   !    ~    +    -
-# =~   !~   x
-# <<   >>   cmp  ~~
-# <=>  .    ..   ...  ,
-# //
-# ?    :    =    .=   //=
-# <>   =>   ->
-# not
-
-# # This is the list of valid operators
-# ++   --   **   !    ~    +    -
-# =~   !~   *    /    %    x
-# <<   >>   lt   gt   le   ge   cmp  ~~
-# ==   !=   <=>  .    ..   ...  ,
-# &    |    ^    &&   ||   //
-# ?    :    =    +=   -=   *=   .=   //=
-# <    >    <=   >=   <>   =>   ->
-# and  or   dor  not  eq   ne
-
-  my %binop = (
-    '>' => 1, '>=' => 1, 'gt' => 1, 'ge' => 1,
-    '<' => 1, '<=' => 1, 'lt' => 1, 'le' => 1,
-    '==' => 1, '!=' => 1, 'eq' => 1, 'ne' => 1,
-    '&' => 1, '&&' => 1, 'and' => 1,
-    '|' => 1, '||' => 1, 'or' => 1, 'dor' => 1,
-    '^' => 1,
-    '+=' => 1, '-=' => 1, '*=' => 1, '/=' => 1,
-    '*' => 1, '/' => 1, '%' => 1,
-  );
-  my %action = ();
-  $action{$_} = 'binop' for keys %binop;
+# +    -
+# ,
+# ?    :
+# =>   ->
 
   my $content = $args{node}->content;
 
@@ -194,8 +209,8 @@ Perhaps a little code snippet.
 
     use JGoff::App::Perltidy;
 
-    my $foo = JGoff::App::Perltidy->new();
-    ...
+    my $perltidy = JGoff::App::Perltidy->new;
+    print $perltidy->reformat( text => '$x++ - 5 < 32; map { $_+1 } @foo' );
 
 =head1 METHODS
 
