@@ -21,7 +21,7 @@ has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
     '+' => { pre => ' ', post => ' ', unary => '' },
     '-' => { pre => ' ', post => ' ', unary => '' },
 
-    '++' => '', '--' => '',
+    '++' => { pre => '', post => '' }, '--' => { pre => '', post => '' },
     '!' => '', '~' => '',
 
     ',' => { pre => '', post => ' ' },
@@ -164,7 +164,7 @@ sub _binary_operator {
   my $setting = $self->settings->{'operator'}->{$operator};
 
   croak "*** No '$operator' operator settings specified!" unless
-    $setting;
+    defined $setting;
   $self->_canon_whitespace_before(
     node => $args{node},
     whitespace => $setting->{'pre'}

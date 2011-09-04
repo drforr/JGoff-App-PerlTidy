@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 22;
+use Test::More tests => 26;
 use PPI;
 use PPI::Dumper;
 
@@ -49,12 +49,14 @@ my @test = (
   [ '0*1/1' => '0 * 1 / 1' ],
   [ '+1' => '+1' ],
   [ '+  1' => '+1' ],
-#  [ '0 ++' => '0++' ],
+  [ '0++' => '0++' ],
+  [ '++0' => '++0' ],
+  [ '0++' => '0++' ],
+  [ '0 ++' => '0++' ],
 );
 
 for my $test ( @test ) {
   is( $tidy->reformat( text => $test->[0] ), $test->[1] ) or do {
-$tidy->DEBUG(1) if $test->[0] eq '+  1';
     my $ppi = PPI::Document->new( \$test->[0] );
     my $d = PPI::Dumper->new( $ppi );
     diag( "Dump( '$test->[0]' ): " . $d->string );
