@@ -5,7 +5,7 @@ use PPI;
 use PPI::Dumper;
 
 BEGIN {
-    use_ok( 'JGoff::App::Perltidy' ) || print "Bail out!\n";
+  use_ok( 'JGoff::App::Perltidy' ) || print "Bail out!\n";
 }
 
 my $tidy = JGoff::App::Perltidy->new;
@@ -62,9 +62,10 @@ my @test = (
   [ "0 ++;\n1\t++  ;\n  2+2" => "0++;\n1++;\n2 + 2" ],
 );
 
-#    my $ppi = PPI::Document->new( \"0 ++;\n1 ++" );
-#    my $d = PPI::Dumper->new( $ppi );
-#    die "\n".$d->string;
+#my $ppi = PPI::Document->new( \"(1,2)" );
+#my $d = PPI::Dumper->new( $ppi );
+#die "\n".$d->string;
+
 for my $test ( @test ) {
   my $res = $tidy->reformat( text => $test->[0] );
   is( $res, $test->[1] ) or do {
@@ -78,24 +79,7 @@ for my $test ( @test ) {
     $d = PPI::Dumper->new( $ppi );
     my $res_dump = $d->string;
 
-diag <<EOF;
-C<$test->[0]>
-
-should be:
-
-C<$test->[1]>
-
-but is:
-
-C<$res>
-EOF
-
-    diag <<EOF;
-$test_0
-
-$test_1
-
-$res_dump
-EOF
+    diag "C<$test->[0]>\nshould be:\nC<$test->[1]>\nbut is:\nC<$res>";
+    diag "$test_0\n$test_1\n$res_dump";
   };
 }

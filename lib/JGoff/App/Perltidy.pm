@@ -18,48 +18,72 @@ use Moose;
 has DEBUG => ( is => 'rw', isa => 'Int', default => 0 );
 has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
   operator => {
-    '+' => { pre => ' ', post => ' ', unary => '' },
-    '-' => { pre => ' ', post => ' ', unary => '' },
-
-    '++' => { pre => '', post => '' }, '--' => { pre => '', post => '' },
-    '!' => '', '~' => '',
-
-    ',' => { pre => '', post => ' ' },
-    '=>' => { pre => ' ', post => ' ' },
-    '->' => { pre => '', post => '' },
-
-    '<' => { pre => ' ', post => ' ' }, 'lt' => { pre => ' ', post => ' ' },
-    '<=' => { pre => ' ', post => ' ' }, 'le' => { pre => ' ', post => ' ' },
-    '>' => { pre => ' ', post => ' ' }, 'gt' => { pre => ' ', post => ' ' },
-    '>=' => { pre => ' ', post => ' ' }, 'ge' => { pre => ' ', post => ' ' },
-    '==' => { pre => ' ', post => ' ' }, 'eq' => { pre => ' ', post => ' ' },
-    '!=' => { pre => ' ', post => ' ' }, 'ne' => { pre => ' ', post => ' ' },
-    '&' => { pre => ' ', post => ' ' },
-    '&&' => { pre => ' ', post => ' ' },
-    'and' => { pre => ' ', post => ' ' },
-    '|' => { pre => ' ', post => ' ' },
-    '||' => { pre => ' ', post => ' ' },
-    '//' => { pre => ' ', post => ' ' },
-    'or' => { pre => ' ', post => ' ' },
-    'dor' => { pre => ' ', post => ' ' },
-    '^' => { pre => ' ', post => ' ' },
-    '+=' => { pre => ' ', post => ' ' }, '-=' => { pre => ' ', post => ' ' },
-    '*=' => { pre => ' ', post => ' ' }, '/=' => { pre => ' ', post => ' ' },
-    '.=' => { pre => ' ', post => ' ' }, '//=' => { pre => ' ', post => ' ' },
-    '*' => { pre => ' ', post => ' ' },
-    '/' => { pre => ' ', post => ' ' },
-    '%' => { pre => ' ', post => ' ' },
-    '<<' => { pre => ' ', post => ' ' },
-    '>>' => { pre => ' ', post => ' ' },
+    q{->} => { pre => q{}, post => q{} },
+    q{++} => { pre => q{ }, post => q{ } },
+    q{--} => { pre => q{ }, post => q{ } },
+    q{**} => { pre => q{ }, post => q{ } },
+    q{!} => { unary => q{} },
+    q{~} => { unary => q{} },
+    q{+} => { pre => q{ }, post => q{ }, unary => q{} },
+    q{-} => { pre => q{ }, post => q{ }, unary => q{} },
+    q{=~} => { pre => q{ }, post => q{ } },
+    q{!~} => { pre => q{ }, post => q{ } },
+    q{*} => { pre => q{ }, post => q{ } },
+    q{/} => { pre => q{ }, post => q{ } },
+    q{%} => { pre => q{ }, post => q{ } },
+    q{x} => { pre => q{ }, post => q{ } },
+    q{.} => { pre => q{ }, post => q{ } },
+    q{<<} => { pre => q{ }, post => q{ } },
+    q{>>} => { pre => q{ }, post => q{ } },
+    q{<} => { pre => q{ }, post => q{ } },
+    q{>} => { pre => q{ }, post => q{ } },
+    q{<=} => { pre => q{ }, post => q{ } },
+    q{>=} => { pre => q{ }, post => q{ } },
+    q{lt} => { pre => q{ }, post => q{ } },
+    q{gt} => { pre => q{ }, post => q{ } },
+    q{le} => { pre => q{ }, post => q{ } },
+    q{ge} => { pre => q{ }, post => q{ } },
+    q{==} => { pre => q{ }, post => q{ } },
+    q{!=} => { pre => q{ }, post => q{ } },
+    q{<=>} => { pre => q{ }, post => q{ } },
+    q{eq} => { pre => q{ }, post => q{ } },
+    q{ne} => { pre => q{ }, post => q{ } },
+    q{cmp} => { pre => q{ }, post => q{ } },
+    q{~~} => { pre => q{ }, post => q{ } },
+    q{&} => { pre => q{ }, post => q{ } },
+    q{|} => { pre => q{ }, post => q{ } },
+    q{^} => { pre => q{ }, post => q{ } },
+    q{&&} => { pre => q{ }, post => q{ } },
+    q{||} => { pre => q{ }, post => q{ } },
+    q{//} => { pre => q{ }, post => q{ } },
+    q{..} => { pre => q{ }, post => q{ } },
+    q{...} => { pre => q{ }, post => q{ } },
+    q{?} => { pre => q{ }, post => q{ } },
+    q{:} => { pre => q{ }, post => q{ } },
+    q{=} => { pre => q{ }, post => q{ } },
+    q{+=} => { pre => q{ }, post => q{ } },
+    q{-=} => { pre => q{ }, post => q{ } },
+    q{*=} => { pre => q{ }, post => q{ } },
+    q{.=} => { pre => q{ }, post => q{ } },
+    q{/=} => { pre => q{ }, post => q{ } },
+    q{//=} => { pre => q{ }, post => q{ } },
+    q{=>} => { pre => q{ }, post => q{ } },
+    q{<>} => { pre => q{ }, post => q{ } },
+    q{and} => { pre => q{ }, post => q{ } },
+    q{or} => { pre => q{ }, post => q{ } },
+    q{xor} => { pre => q{ }, post => q{ } },
+    q{dor} => { pre => q{ }, post => q{ } },
+    q{not} => { pre => q{ }, post => q{ } },
+    q{,} => { pre => q{}, post => q{ } },
   },
-  statement => { pre => '', post => "\n" },
-  indent => '    ',
+  statement => { pre => q{}, post => qq{\n} },
+  indent => q{    },
   #
   # The last statement of a function doesn't get a newline.
   #
   subroutine => {
-    open => { pre => "\n  ", post => "\n" },
-    close => { pre => "\n  ", post => "\n  " }
+    open => { pre => qq{\n  }, post => qq{\n} },
+    close => { pre => qq{\n  }, post => qq{\n  } }
   }
 } } );
 
@@ -117,8 +141,8 @@ sub _remove_whitespace_around {
   croak "*** Internal error - No node passed in" unless
     $args{node};
 
-  $self->_remove_whitespace_before( node => $args{node} );
-  $self->_remove_whitespace_after( node => $args{node} );
+  $self->_remove_whitespace_before( %args );
+  $self->_remove_whitespace_after( %args );
 }
 
 # }}}
@@ -169,6 +193,20 @@ sub _canon_whitespace_after {
 
 # }}}
 
+# {{{ _canon_whitespace_around( node => $node )
+
+sub _canon_whitespace_around {
+  my $self = shift;
+  my %args = @_;
+  croak "*** Internal error - No node passed in" unless
+    $args{node};
+
+  $self->_canon_whitespace_before( %args );
+  $self->_canon_whitespace_after( %args );
+}
+
+# }}}
+
 # {{{ _binary_operator( node => $node )
 
 sub _binary_operator {
@@ -207,8 +245,14 @@ sub _unary_operator {
 
   croak "*** No '$operator' operator settings specified!" unless
     $setting;
-  $self->_canon_whitespace_before( node => $args{node}, pre => $setting );
-  $self->_canon_whitespace_after( node => $args{node}, post => $setting );
+  $self->_canon_whitespace_before(
+    node => $args{node},
+    pre => $setting->{unary}
+  );
+  $self->_canon_whitespace_after(
+    node => $args{node},
+    post => $setting->{unary}
+  );
 }
 
 # }}}
@@ -222,8 +266,11 @@ sub _ppi_token_operator {
     exists $args{node};
 
   my %action = (
-    '++' => 'unary',  '--' => 'unary',
-    '!' => 'unary', '~' => 'unary', 'not' => 'unary',
+    '++' => 'unary',
+    '--' => 'unary',
+    '!' => 'unary',
+    '~' => 'unary',
+    'not' => 'unary',
     '<>' => 'unary',
   );
   my $operator = $args{node}->content;
@@ -297,6 +344,83 @@ sub reformat {
 
   return $self->ppi->content;
 }
+
+=pod
+
+ PPI::Element
+    PPI::Node
+       PPI::Document
+          PPI::Document::Fragment
+       PPI::Statement
+          PPI::Statement::Package
+          PPI::Statement::Include
+          PPI::Statement::Sub
+             PPI::Statement::Scheduled
+          PPI::Statement::Compound
+          PPI::Statement::Break
+          PPI::Statement::Given
+          PPI::Statement::When
+          PPI::Statement::Data
+          PPI::Statement::End
+          PPI::Statement::Expression
+             PPI::Statement::Variable
+          PPI::Statement::Null
+          PPI::Statement::UnmatchedBrace
+          PPI::Statement::Unknown
+       PPI::Structure
+          PPI::Structure::Block
+          PPI::Structure::Subscript
+          PPI::Structure::Constructor
+          PPI::Structure::Condition
+          PPI::Structure::List
+          PPI::Structure::For
+          PPI::Structure::Given
+          PPI::Structure::When
+          PPI::Structure::Unknown
+    PPI::Token
+       PPI::Token::Whitespace
+       PPI::Token::Comment
+       PPI::Token::Pod
+       PPI::Token::Number
+          PPI::Token::Number::Binary
+          PPI::Token::Number::Octal
+          PPI::Token::Number::Hex
+          PPI::Token::Number::Float
+             PPI::Token::Number::Exp
+          PPI::Token::Number::Version
+       PPI::Token::Word
+       PPI::Token::DashedWord
+       PPI::Token::Symbol
+          PPI::Token::Magic
+       PPI::Token::ArrayIndex
+       PPI::Token::Operator
+       PPI::Token::Quote
+          PPI::Token::Quote::Single
+          PPI::Token::Quote::Double
+          PPI::Token::Quote::Literal
+          PPI::Token::Quote::Interpolate
+       PPI::Token::QuoteLike
+          PPI::Token::QuoteLike::Backtick
+          PPI::Token::QuoteLike::Command
+          PPI::Token::QuoteLike::Regexp
+          PPI::Token::QuoteLike::Words
+          PPI::Token::QuoteLike::Readline
+       PPI::Token::Regexp
+          PPI::Token::Regexp::Match
+          PPI::Token::Regexp::Substitute
+          PPI::Token::Regexp::Transliterate
+       PPI::Token::HereDoc
+       PPI::Token::Cast
+       PPI::Token::Structure
+       PPI::Token::Label
+       PPI::Token::Separator
+       PPI::Token::Data
+       PPI::Token::End
+       PPI::Token::Prototype
+       PPI::Token::Attribute
+       PPI::Token::Unknown
+
+=cut
 
 # }}}
 
