@@ -25,7 +25,7 @@ EOF
 my %opts;
 my $res = GetOptions(
   \%opts,
-  'help|h',
+  'help|h'
 );
 
 Usage if $opts{help};
