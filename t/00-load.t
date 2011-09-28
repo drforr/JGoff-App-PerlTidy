@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 49;
+use Test::More tests => 51;
 use PPI;
 use PPI::Dumper;
 
@@ -82,7 +82,7 @@ my @test = (
   [ qq{\$x ++;\n\$x\t++} => qq{\$x++;\n\$x++} ],
   [ qq{\$x ++;\n\$x\t++  ;\n  2+2} => qq{\$x++;\n\$x++;\n2 + 2} ],
 
-#  [ q{sub  foo{}} => qq{sub foo\n  {\n  }} ]
+  [ q(sub  foo{}) => qq(sub foo\n  {\n  }) ]
 );
 
 #my $ppi = PPI::Document->new( \"1=-5" );

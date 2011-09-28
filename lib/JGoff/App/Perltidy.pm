@@ -113,7 +113,7 @@ has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
   subroutine => {
     inter => q{ },
     open => { pre => qq{\n  }, post => qq{\n} },
-    close => { pre => qq{\n  }, post => q{} },
+    close => { pre => qq{  }, post => q{} },
     attribute => { pre => q{ }, post => q{ } }
   }
 } } );
@@ -339,6 +339,48 @@ sub _ppi_statement_sub {
   my %args = @_;
   croak "*** No node specified!" unless
     exists $args{node};
+  my $node = $args{node};
+  my $setting = $self->settings->{subroutine};
+
+  $node = $node->first_element; # 'sub'
+
+  $node = $node->snext_sibling; # 'foo' - work backwards
+  while ( $node->previous_sibling and
+          $node->previous_sibling->isa('PPI::Token::Whitespace') ) {
+    $node->previous_sibling->remove;
+  }
+  if ( $setting->{inter} ne q{} ) {
+    my $whitespace = PPI::Token::Whitespace->new;
+    $whitespace->set_content( $setting->{inter} );
+    $node->insert_before( $whitespace );
+  }
+
+  $node = $node->snext_sibling; # '{}'
+  while ( $node->previous_sibling and
+          $node->previous_sibling->isa('PPI::Token::Whitespace') ) {
+    $node->previous_sibling->remove;
+  }
+  if ( $setting->{open}->{pre} ne q{} ) {
+    my $whitespace = PPI::Token::Whitespace->new;
+    $whitespace->set_content( $setting->{open}->{pre} );
+    $node->insert_before( $whitespace );
+  }
+#use YAML;die Dump($node);
+
+  my $inter = qq($setting->{open}{post}$setting->{close}{pre});
+  my $doc = PPI::Document->new( \qq(sub foo{$inter}) );
+#use YAML; die Dump($doc->find_first('PPI::Structure::Block'));
+#$node->replace( $doc->find_first('PPI::Structure::Block') );
+
+#use YAML;die Dump($node);
+#$node->insert_after( $doc->find_first('PPI::Structure::Block') );
+#$node->remove;
+
+
+##use YAML;die Dump($node);
+#use PPI::Dumper;
+#my $dump = PPI::Dumper->new( $doc->find_first('PPI::Structure::Block') );
+##die $dump->string;
 }
 
 # }}}
