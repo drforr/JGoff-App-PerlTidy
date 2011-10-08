@@ -382,20 +382,20 @@ sub reformat {
 
   my @stack = ( [ $self->ppi, 0, [ 0 ] ] );
 
-  if ( $DEBUG == 1 ) {
-    warn "\n";
-  }
   while(@stack) {
     my ( $node, $indent, $index ) = @{ pop @stack };
 
-    $self->_debug_stack( $node, $indent, $index ) if $DEBUG == 1;
+    $self->_debug_stack( $node, $indent, $index ) if $DEBUG and $DEBUG == 1;
 
     if ( $node->isa( 'PPI::Statement' ) ) {
       $node->insert_after( $self->_whitespace_node( "\n|" ) )
         if $node->next_sibling;
     }
     elsif ( $node->isa( 'PPI::Structure::Block' ) ) {
-#      $node->insert_after( $self->_whitespace_node( "\n|  " ) );
+      $node->first_element->insert_after(
+        $self->_whitespace_node( "\n|||||" )
+      );
+      $node->insert_before( $self->_whitespace_node( "\n|||" ) );
     }
 
     if ( $node->can( 'elements' ) ) {
