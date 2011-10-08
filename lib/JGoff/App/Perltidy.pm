@@ -14,7 +14,7 @@ PPI::Element
       PPI::Statement
          PPI::Statement::Package
          PPI::Statement::Include
-#        PPI::Statement::Sub
+         PPI::Statement::Sub
          PPI::Statement::Scheduled
          PPI::Statement::Compound
          PPI::Statement::Break
@@ -84,39 +84,26 @@ PPI::Element
 # }}}
 
 #
-# Defaults to Whitesmith
+# Defaults to Whitesmith, most complex I could find.
 #
 # $x = 0;
 # sub foo
 #   {
 #     $bar++;
 #     $bar += 32;
-#     do_stuff ( );
+#     do { $stuff++ };
+#     die "Blah blah" if # Conditionals at EOL,
+#       $bar == 1;       # tests below that.
+#     this( list => 'of', parameters => [qw( is really-long )],
+#           and => 'will', wrap => 'at', 72 => columns );
+#     if ( my $condition = stuff( like => this() )
+#       {
+#         $func = 27 / int( $stuff );
+#       }
 #   }
 #
 has DEBUG => ( is => 'rw', isa => 'Int', default => 0 );
-has settings => ( is => 'rw', isa => 'HashRef', default => sub { {
-  operator => {
-    q{-default} => {
-      infix => { before => q{ }, after => q{ } },
-      prefix => q{},
-      postfix => q{}
-    },
-    q{->} => { infix => { before => q{}, after => q{} } },
-    q{,} => { infix => { before => q{}, after => q{ } } },
-  },
-  statement => { pre => q{}, post => qq{\n} },
-  indent => q{    },
-  #
-  # The last statement of a function doesn't get a newline.
-  #
-  subroutine => {
-    inter => q{ },
-    open => { pre => qq{\n  }, post => qq{\n} },
-    close => { pre => qq{  }, post => q{} },
-    attribute => { pre => q{ }, post => q{ } }
-  }
-} } );
+has settings => ( is => 'rw', isa => 'HashRef', default => sub { { } } );
 
 has ppi => ( is => 'rw', isa => 'Object' );
 
@@ -131,6 +118,8 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
+
+=pod
 
 # {{{ _remove_whitespace_before( node => $node )
 
@@ -178,62 +167,15 @@ sub _remove_whitespace_around {
 
 # }}}
 
-# {{{ _canon_whitespace_before( node => $node [, whitespace => ' ' ] )
+# {{{ _whitespace_node( whitespace => $ws )
 
-sub _canon_whitespace_before {
+sub _whitespace_node {
   my $self = shift;
   my %args = @_;
-  croak "*** Internal error - No node passed in" unless
-    $args{node};
 
-  delete $args{whitespace} if $args{whitespace} and $args{whitespace} eq q{};
-
-  return unless $args{node}->previous_sibling;
-
-  $self->_remove_whitespace_before( node => $args{node} );
-  if ( $args{whitespace} ) {
-    my $whitespace = PPI::Token::Whitespace->new;
-    $whitespace->set_content( $args{whitespace} );
-    $args{node}->insert_before( $whitespace ) or
-      croak "*** Could not insert whitespace!";
-  }
-}
-
-# }}}
-
-# {{{ _canon_whitespace_after( node => $node [, whitespace => ' ' ] )
-
-sub _canon_whitespace_after {
-  my $self = shift;
-  my %args = @_;
-  croak "*** Internal error - No node passed in" unless
-    $args{node};
-
-  delete $args{whitespace} if $args{whitespace} and $args{whitespace} eq q{};
-
-  return unless $args{node}->next_sibling;
-
-  $self->_remove_whitespace_after( %args );
-  if ( $args{whitespace} ) {
-    my $whitespace = PPI::Token::Whitespace->new;
-    $whitespace->set_content( $args{whitespace} );
-    $args{node}->next_sibling->insert_before( $whitespace ) or
-      croak "*** Could not insert whitespace!";
-  }
-}
-
-# }}}
-
-# {{{ _canon_whitespace_around( node => $node )
-
-sub _canon_whitespace_around {
-  my $self = shift;
-  my %args = @_;
-  croak "*** Internal error - No node passed in" unless
-    $args{node};
-
-  $self->_canon_whitespace_before( %args );
-  $self->_canon_whitespace_after( %args );
+  my $whitespace = PPI::Token::Whitespace->new;
+  $whitespace->set_content( $args{whitespace} );
+  return $whitespace;
 }
 
 # }}}
@@ -273,9 +215,8 @@ sub _ppi_token_operator {
     }
 
     if ( $node->snext_sibling and $setting->{prefix} ne q{} ) {
-      my $whitespace = PPI::Token::Whitespace->new;
-      $whitespace->set_content( $setting->{prefix} );
-      $node->insert_after( $whitespace );
+      $node->insert_after(
+        $self->_whitespace_node( whitespace => $setting->{prefix} ) );
     }
   }
 
@@ -298,9 +239,8 @@ sub _ppi_token_operator {
     }
 
     if ( $node->sprevious_sibling and $setting->{postfix} ne q{} ) {
-      my $whitespace = PPI::Token::Whitespace->new;
-      $whitespace->set_content( $setting->{postfix} );
-      $node->insert_before( $whitespace );
+      $node->insert_before(
+        $self->_whitespace_node( whitespace => $setting->{postfix} ) );
     }
   }
 
@@ -318,14 +258,13 @@ sub _ppi_token_operator {
     }
 
     if ( $node->sprevious_sibling and $setting->{infix}->{before} ne q{} ) {
-      my $whitespace = PPI::Token::Whitespace->new;
-      $whitespace->set_content( $setting->{infix}->{before} );
-      $node->insert_before( $whitespace );
+      $node->insert_before(
+        $self->_whitespace_node( whitespace => $setting->{infix}->{before} ) );
     }
     if ( $node->snext_sibling and $setting->{infix}->{after} ne q{} ) {
       my $whitespace = PPI::Token::Whitespace->new;
-      $whitespace->set_content( $setting->{infix}->{after} );
-      $node->insert_after( $whitespace );
+      $node->insert_after(
+        $self->_whitespace_node( whitespace => $setting->{infix}->{after} ) );
     }
   }
 }
@@ -350,9 +289,8 @@ sub _ppi_statement_sub {
     $node->previous_sibling->remove;
   }
   if ( $setting->{inter} ne q{} ) {
-    my $whitespace = PPI::Token::Whitespace->new;
-    $whitespace->set_content( $setting->{inter} );
-    $node->insert_before( $whitespace );
+    $node->insert_before(
+      $self->_whitespace_node( whitespace => $setting->{inter} ) );
   }
 
   $node = $node->snext_sibling; # '{}'
@@ -361,29 +299,24 @@ sub _ppi_statement_sub {
     $node->previous_sibling->remove;
   }
   if ( $setting->{open}->{pre} ne q{} ) {
-    my $whitespace = PPI::Token::Whitespace->new;
-    $whitespace->set_content( $setting->{open}->{pre} );
-    $node->insert_before( $whitespace );
+    $node->insert_before(
+      $self->_whitespace_node( whitespace => $setting->{open}->{pre} ) );
+  }
+  $node = $node->schild(0); # '{-><-}'
+  while ( $node->previous_sibling and
+          $node->previous_sibling->isa('PPI::Token::Whitespace') ) {
+    $node->previous_sibling->remove;
   }
 #use YAML;die Dump($node);
-
-  my $inter = qq($setting->{open}{post}$setting->{close}{pre});
-  my $doc = PPI::Document->new( \qq(sub foo{$inter}) );
-#use YAML; die Dump($doc->find_first('PPI::Structure::Block'));
-#$node->replace( $doc->find_first('PPI::Structure::Block') );
-
-#use YAML;die Dump($node);
-#$node->insert_after( $doc->find_first('PPI::Structure::Block') );
-#$node->remove;
-
-
-##use YAML;die Dump($node);
-#use PPI::Dumper;
-#my $dump = PPI::Dumper->new( $doc->find_first('PPI::Structure::Block') );
-##die $dump->string;
+  if ( $setting->{open}->{post} ne q{} ) {
+    $node->insert_before(
+      $self->_whitespace_node( whitespace => $setting->{open}->{post} ) );
+  }
 }
 
 # }}}
+
+=cut
 
 =head1 SYNOPSIS
 
@@ -402,6 +335,40 @@ Perhaps a little code snippet.
 
 =cut
 
+# {{{ _whitespace_node( $ws )
+
+sub _whitespace_node {
+  my $self = shift;
+  my ( $whitespace ) = @_;
+
+  my $node = PPI::Token::Whitespace->new;
+  $node->set_content( $whitespace );
+  return $node;
+}
+
+# }}}
+
+# {{{ _debug_stack
+
+sub _debug_stack {
+  my $self = shift;
+  my ( $node, $indent, $index ) = @_;
+
+  my $ref = ref( $node );
+  $ref =~ s{^PPI::}{};
+  my $str;
+#  $str = $sub;
+  $str .= " (" . join( ',', map { sprintf "%02d", $_ } @$index ) . ") ";
+  $str .= ' ' x ( 30 - length($str) + $indent );
+  $str .= $ref;
+  $str .= ' ' x ( 60 - length($str) );
+  $str .= " (" . $node->content . ")" if $node->isa( 'PPI::Token' );
+  $str .= "\n";
+  warn $str;
+}
+
+# }}}
+
 # {{{ reformat( text => $code )
 
 sub reformat {
@@ -409,111 +376,42 @@ sub reformat {
   my %args = @_;
   croak "*** No text specified!" unless
     exists $args{text};
+  my $DEBUG = $args{debug};
 
   $self->ppi( PPI::Document->new( \$args{text} ) );
 
-  if ( my $node_list = $self->ppi->find('PPI::Token::Operator') ) {
-    for my $node ( @$node_list ) {
-      $self->_ppi_token_operator( node => $node );
-    }
-  }
-  if ( my $node_list = $self->ppi->find('PPI::Statement::Sub') ) {
-    for my $node ( @$node_list ) {
-      $self->_ppi_statement_sub( node => $node );
-    }
-  }
-  if ( my $node_list = $self->ppi->find('PPI::Statement') ) {
-    for my $node ( @$node_list ) {
-      $self->_remove_whitespace_around( node => $node );
-    }
-    for my $node ( @$node_list ) {
-      next unless $node->next_sibling;
+  my @stack = ( [ $self->ppi, 0, [ 0 ] ] );
 
-      my $whitespace = PPI::Token::Whitespace->new;
-      $whitespace->set_content( $self->settings->{statement}{post} );
-      $node->insert_after( $whitespace );
+  if ( $DEBUG == 1 ) {
+    warn "\n";
+  }
+  while(@stack) {
+    my ( $node, $indent, $index ) = @{ pop @stack };
+
+    $self->_debug_stack( $node, $indent, $index ) if $DEBUG == 1;
+
+    if ( $node->isa( 'PPI::Statement' ) ) {
+      $node->insert_after( $self->_whitespace_node( "\n|" ) )
+        if $node->next_sibling;
+    }
+    elsif ( $node->isa( 'PPI::Structure::Block' ) ) {
+#      $node->insert_after( $self->_whitespace_node( "\n|  " ) );
+    }
+
+    if ( $node->can( 'elements' ) ) {
+      my @index = @$index;
+      my @elements = $node->elements;
+      for ( my $idx = $#elements ; $idx >= 0 ; $idx-- ) {
+        push @stack, [
+          $elements[$idx], 
+          $indent + 1, 
+          [ @index, $idx ] 
+        ];
+      }
     }
   }
-
   return $self->ppi->content;
 }
-
-=pod
-
- PPI::Element
-    PPI::Node
-       PPI::Document
-          PPI::Document::Fragment
-       PPI::Statement
-          PPI::Statement::Package
-          PPI::Statement::Include
-          PPI::Statement::Sub
-             PPI::Statement::Scheduled
-          PPI::Statement::Compound
-          PPI::Statement::Break
-          PPI::Statement::Given
-          PPI::Statement::When
-          PPI::Statement::Data
-          PPI::Statement::End
-          PPI::Statement::Expression
-             PPI::Statement::Variable
-          PPI::Statement::Null
-          PPI::Statement::UnmatchedBrace
-          PPI::Statement::Unknown
-       PPI::Structure
-          PPI::Structure::Block
-          PPI::Structure::Subscript
-          PPI::Structure::Constructor
-          PPI::Structure::Condition
-          PPI::Structure::List
-          PPI::Structure::For
-          PPI::Structure::Given
-          PPI::Structure::When
-          PPI::Structure::Unknown
-    PPI::Token
-       PPI::Token::Whitespace
-       PPI::Token::Comment
-       PPI::Token::Pod
-       PPI::Token::Number
-          PPI::Token::Number::Binary
-          PPI::Token::Number::Octal
-          PPI::Token::Number::Hex
-          PPI::Token::Number::Float
-             PPI::Token::Number::Exp
-          PPI::Token::Number::Version
-       PPI::Token::Word
-       PPI::Token::DashedWord
-       PPI::Token::Symbol
-          PPI::Token::Magic
-       PPI::Token::ArrayIndex
-       PPI::Token::Operator
-       PPI::Token::Quote
-          PPI::Token::Quote::Single
-          PPI::Token::Quote::Double
-          PPI::Token::Quote::Literal
-          PPI::Token::Quote::Interpolate
-       PPI::Token::QuoteLike
-          PPI::Token::QuoteLike::Backtick
-          PPI::Token::QuoteLike::Command
-          PPI::Token::QuoteLike::Regexp
-          PPI::Token::QuoteLike::Words
-          PPI::Token::QuoteLike::Readline
-       PPI::Token::Regexp
-          PPI::Token::Regexp::Match
-          PPI::Token::Regexp::Substitute
-          PPI::Token::Regexp::Transliterate
-       PPI::Token::HereDoc
-       PPI::Token::Cast
-       PPI::Token::Structure
-       PPI::Token::Label
-       PPI::Token::Separator
-       PPI::Token::Data
-       PPI::Token::End
-       PPI::Token::Prototype
-       PPI::Token::Attribute
-       PPI::Token::Unknown
-
-=cut
 
 # }}}
 

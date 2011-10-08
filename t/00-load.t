@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 51;
+use Test::More tests => 2;
 use PPI;
 use PPI::Dumper;
 
@@ -9,6 +9,20 @@ BEGIN {
 }
 
 my $tidy = JGoff::App::Perltidy->new;
+
+{
+  my $in = <<'EOF';
+EOF
+
+  my $out = <<'EOF';
+EOF
+
+  my $res = $tidy->reformat( text => $in );
+
+  is( $res, $out ) or diag( "$in => $out but was $res" );
+}
+
+=pod
 
 #
 # Default settings - Deliberately somewhat complex
@@ -23,6 +37,23 @@ my $tidy = JGoff::App::Perltidy->new;
 #       }
 #   }
 #
+
+# $x = 0;
+# BEGIN { $short_statement->in_one( 'line' ) }
+# sub foo
+#   {
+#     $bar++;
+#     $bar += 32;
+#     do { $stuff++ };
+#     die "Blah blah" if # Conditionals at EOL,
+#       $bar == 1;       # tests below that.
+#     this( list => 'of', parameters => [qw( is really-long )],
+#           and => 'will', wrap => 'at', 72 => columns );
+#     if ( my $condition = stuff( like => this() ) )
+#       {
+#         $func = 27 / int( $stuff );
+#       }
+#   }
 
 my @test = (
   [ q{!0} => q{!0} ],
@@ -82,7 +113,8 @@ my @test = (
   [ qq{\$x ++;\n\$x\t++} => qq{\$x++;\n\$x++} ],
   [ qq{\$x ++;\n\$x\t++  ;\n  2+2} => qq{\$x++;\n\$x++;\n2 + 2} ],
 
-  [ q(sub  foo{}) => qq(sub foo\n  {\n  }) ]
+  #[ q(sub  foo{}) => qq(sub foo\n  {\n  }) ]
+  [ q(sub  foo{$x++}) => qq(sub foo\n  {\n  \$x++\n  }) ]
 );
 
 #my $ppi = PPI::Document->new( \"1=-5" );
@@ -106,3 +138,5 @@ for my $test ( @test ) {
     diag "$test_0\n$test_1\n$res_dump";
   };
 }
+
+=cut
