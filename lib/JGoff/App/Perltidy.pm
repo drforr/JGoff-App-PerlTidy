@@ -182,43 +182,53 @@ sub _reformat {
   my $self = shift;
   my %args = @_;
   my $node = $args{node};
-  #my $indent = $args{indent};
   my $scope = $args{scope};
-  #my $index = $args{index};
 
-  if ( $node->isa( 'PPI::Token::Word' ) and
-       $node->content eq 'my' ) {
-    while ( $node->next_sibling and
-            $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-      $node->next_sibling->remove;
+  if ( $node->isa( 'PPI::Token::Word' ) ) {
+    if ( $node->content eq 'my' ) {
+      while ( $node->next_sibling and
+              $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+        $node->next_sibling->remove;
+      }
+      $node->insert_after( $self->_whitespace_node( " " ) );
     }
-    $node->insert_after( $self->_whitespace_node( " " ) );
   }
-  elsif ( $node->isa( 'PPI::Token::Operator' ) and
-          $node->content eq '=' ) {
-    while ( $node->previous_sibling and
-            $node->previous_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-      $node->previous_sibling->remove;
+  elsif ( $node->isa( 'PPI::Token::Operator' ) ) {
+    if ( $node->content eq '=' ) {
+      while ( $node->previous_sibling and
+              $node->previous_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+        $node->previous_sibling->remove;
+      }
+      $node->insert_before( $self->_whitespace_node( " " ) );
+      while ( $node->next_sibling and
+              $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+        $node->next_sibling->remove;
+      }
+      $node->insert_after( $self->_whitespace_node( " " ) );
     }
-    $node->insert_before( $self->_whitespace_node( " " ) );
-    while ( $node->next_sibling and
-            $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-      $node->next_sibling->remove;
+  }
+  elsif ( $node->isa( 'PPI::Statement' ) ) {
+    if ( $node->isa( 'PPI::Statement::Variable' ) ) {
+      while ( $node->next_sibling and
+              $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+        $node->next_sibling->remove;
+      }
     }
-    $node->insert_after( $self->_whitespace_node( " " ) );
-  }
-  elsif ( $node->isa( 'PPI::Statement::Sub' ) ) {
-    $node->insert_before( $self->_whitespace_node( "\n" ) );
-  }
-  elsif ( $node->isa( 'PPI::Statement' ) and
-          ! $node->isa( 'PPI::Statement::Expression' ) ) {
-    my $whitespace;
-    $whitespace = "\n" if
-      $node->previous_sibling or
-      $node->parent->isa( 'PPI::Structure::Block' );
-    $whitespace .= '    ' if $scope > 0;
-    $node->insert_before( $self->_whitespace_node( $whitespace ) ) if
-      $whitespace
+
+    if ( $node->isa( 'PPI::Statement::Sub' ) ) {
+      $node->insert_before( $self->_whitespace_node( "\n" ) );
+    }
+    elsif ( $node->isa( 'PPI::Statement::Expression' ) ) {
+    }
+    else {
+      my $whitespace;
+      $whitespace = "\n" if
+        $node->previous_sibling or
+        $node->parent->isa( 'PPI::Structure::Block' );
+      $whitespace .= '    ' if $scope > 0;
+      $node->insert_before( $self->_whitespace_node( $whitespace ) ) if
+        $whitespace
+    }
   }
   elsif ( $node->isa( 'PPI::Structure::Block' ) ) {
     # sub foo ->XXX<- {
