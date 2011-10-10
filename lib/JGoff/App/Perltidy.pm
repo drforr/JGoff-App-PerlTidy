@@ -184,6 +184,8 @@ sub _reformat {
   my $node = $args{node};
   my $scope = $args{scope};
 
+  my $ref = ref $node;
+
   if ( $node->isa( 'PPI::Token::Word' ) ) {
     if ( $node->content eq 'my' ) {
       while ( $node->next_sibling and
@@ -214,11 +216,8 @@ sub _reformat {
         $node->next_sibling->remove;
       }
     }
-
-    if ( $node->isa( 'PPI::Statement::Sub' ) ) {
+    elsif ( $node->isa( 'PPI::Statement::Sub' ) ) {
       $node->insert_before( $self->_whitespace_node( "\n" ) );
-    }
-    elsif ( $node->isa( 'PPI::Statement::Expression' ) ) {
     }
     else {
       my $whitespace;
