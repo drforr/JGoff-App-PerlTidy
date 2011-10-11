@@ -150,12 +150,39 @@ sub _whitespace_node {
 
 # }}}
 
+# {{{ _canonize_before( $node, $ws )
+
+sub _canonize_before {
+  my $self = shift;
+  my ( $node, $ws ) = @_;
+  while ( $node->previous_sibling and
+          $node->previous_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+    $node->previous_sibling->remove;
+  }
+  $node->insert_before( $self->_whitespace_node( $ws ) );
+}
+
+# }}}
+
+# {{{ _canonize_after( $node, $ws )
+
+sub _canonize_after {
+  my $self = shift;
+  my ( $node, $ws ) = @_;
+  while ( $node->next_sibling and
+          $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
+    $node->next_sibling->remove;
+  }
+  $node->insert_after( $self->_whitespace_node( $ws ) );
+}
+
+# }}}
+
 # {{{ _debug_stack( $node, $indent, $scope, $index )
 
 sub _debug_stack {
   my $self = shift;
   my %args = @_;
-#  my ( $node, $indent, $scope, $index ) = @_;
   my $node = $args{node};
   my $indent = $args{indent};
   my $scope = $args{scope};
@@ -188,25 +215,13 @@ sub _reformat {
 
   if ( $node->isa( 'PPI::Token::Word' ) ) {
     if ( $node->content eq 'my' ) {
-      while ( $node->next_sibling and
-              $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-        $node->next_sibling->remove;
-      }
-      $node->insert_after( $self->_whitespace_node( " " ) );
+      $self->_canonize_after( $node, ' ' );
     }
   }
   elsif ( $node->isa( 'PPI::Token::Operator' ) ) {
     if ( $node->content eq '=' ) {
-      while ( $node->previous_sibling and
-              $node->previous_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-        $node->previous_sibling->remove;
-      }
-      $node->insert_before( $self->_whitespace_node( " " ) );
-      while ( $node->next_sibling and
-              $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
-        $node->next_sibling->remove;
-      }
-      $node->insert_after( $self->_whitespace_node( " " ) );
+      $self->_canonize_before( $node, ' ' );
+      $self->_canonize_after( $node, ' ' );
     }
   }
   elsif ( $node->isa( 'PPI::Statement' ) ) {
@@ -215,9 +230,12 @@ sub _reformat {
               $node->next_sibling->isa( 'PPI::Token::Whitespace' ) ) {
         $node->next_sibling->remove;
       }
+      $node->insert_before( $self->_whitespace_node( "\n" ) ) if
+        $node->sprevious_sibling;
     }
     elsif ( $node->isa( 'PPI::Statement::Sub' ) ) {
-      $node->insert_before( $self->_whitespace_node( "\n" ) );
+      $node->insert_before( $self->_whitespace_node( "\n" ) ) if
+        $node->sprevious_sibling;
     }
     else {
       my $whitespace;
