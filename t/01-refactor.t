@@ -1,14 +1,78 @@
 #!perl -T
 
-use Test::More tests => 19;
+use Test::More tests => 5;
 use PPI;
 use PPI::Dumper;
+use Try::Tiny;
 
 BEGIN {
   use_ok( 'JGoff::App::Perltidy' ) || print "Bail out!\n";
 }
 
 my $tidy = JGoff::App::Perltidy->new;
+
+#|
+#|package Foo;
+#|
+#|# Comments get properly indented and remain on the original line.
+#|# Comments always have at least one space after '#'
+#|32 + 2
+#|my $first = 17 + ( 9 / 2 ) || $stuff;
+#|sub empty { }
+#|sub do_something
+#|  {
+#|    my @rray = []; # Comments after code get one leading space
+#|    $first++;
+#|    $rray[0] = 92;
+#|    for my $stuff ( @rray )
+#|      {
+#|        $first  = 9;
+#|        $second = 32;
+#|      }
+#|  }
+
+my @test = (
+  [ q{package Foo} => q{package Foo}, 'package', {debug => 0} ],
+  [ q{package  Foo} => q{package Foo}, 'package with spaces', {debug => 0} ],
+  [ qq{package\nFoo} => q{package Foo}, 'package with newline', {debug => 0} ],
+  [ qq{package \n  \t Foo} => q{package Foo},
+    'package with mixed whitespace', {debug => 0} ]
+#  [ q{} => q{}, 'empty', {debug => 0} ],
+#  [ q{ } => q{}, 'whitespace', {debug => 0} ],
+#  [ q{#foo} => q{# foo}, 'comment', {debug => 0} ],
+#  [ q{ #foo} => q{# foo}, 'comment w/ leading ws', {debug => 0} ],
+#  [ q{  #foo} => q{# foo}, 'comment w/ more leading ws', {debug => 0} ],
+#  [ qq{\n  #foo} => qq{\n# foo}, 'comment w/ even more leading ws', {debug => 0} ],
+);
+
+for my $test ( @test ) {
+  my ( $in, $out, $name, $debug ) = @$test;
+  my $res;
+  try {
+    $res = $tidy->reformat(
+      %$debug,
+      text => $in,
+      style => 'whitesmiths'
+    );
+
+    is( $res, $out, $name ) or do {
+      $in =~ s{ }{|}g;
+      $out =~ s{ }{|}g;
+      $res =~ s{ }{|}g;
+      diag(
+        "\n---- in ----\n$in\n---- out ----\n$out\n---- res ----\n$res\n----"
+      );
+    };
+  }
+  catch {
+    my $str = PPI::Dumper->new($tidy->ppi)->string;
+    diag(
+      "\n---- \$_ ----\n$_\n---- in ----\n$in\n---- Dump ----\n$str\n----"
+    );
+  };
+}
+
+=pod
 
 my @test = (
   [ q{my$first} => q{my $first}, {debug => 0} ],
@@ -37,7 +101,12 @@ for my $test ( @test ) {
     style => 'whitesmiths'
   );
   is( $res, $out ) or do {
-    diag( "\n----\n$in\n----\n$out\n----\n$res\n----" );
+    $in =~ s{ }{|}g;
+    $out =~ s{ }{|}g;
+    $res =~ s{ }{|}g;
+    diag(
+      "\n---- in ----\n$in\n---- out ----\n$out\n---- res ----\n$res\n----"
+    );
   };
 }
 
@@ -133,6 +202,8 @@ EOF
   };
 #die PPI::Dumper->new($tidy->ppi)->string;
 }
+
+=cut
 
 =pod
 
